@@ -19,7 +19,20 @@ const allowedOrigins = () =>
 
 // Middlewares
 app.use(cors({
-  origin: (origin, callback) => callback(null, !!origin && allowedOrigins().includes(origin)),
+  origin: (origin, callback) => {
+    // Em produção Vercel, permite requisições sem origin (server-to-server)
+    if (!origin && process.env.VERCEL) {
+      return callback(null, true);
+    }
+    
+    // Permite domínios Vercel em produção
+    if (process.env.VERCEL && origin && origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    const allowed = allowedOrigins();
+    callback(null, !!origin && allowed.includes(origin));
+  },
   credentials: true,
   exposedHeaders: ['Retry-After', 'RateLimit-Reset', 'X-RateLimit-Scope'],
 }));
